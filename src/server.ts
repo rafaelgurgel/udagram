@@ -10,43 +10,27 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util';
   // Set the network port
   const port = process.env.PORT || 8082;
 
+  var validUrl = require('valid-url');
+
  
   // Use the body parser middleware for post requests
-  app.use(bodyParser.json());
-
-  // TODO1 IMPLEMENT A RESTFUL ENDPOINT
-  
+  app.use(bodyParser.json()); 
  
-  // GET /filteredimage?image_url={{URL}}
-  // endpoint to filter an image from a public url.
-  // IT SHOULD
-  //    1
-  //    1. validate the image_url query
-  //    2. call filterImageFromURL(image_url) to filter the image
-  //    3. send the resulting file in the response
-  //    4. deletes any files on the server on finish of the response
-  // QUERY PARAMATERS
-  //    image_url: URL of a publicly accessible image
-  // RETURNS
-  //   the filtered image file [!!TIP res.sendFile(filteredpath); might be useful]
-
-  /**************************************************************************** */
-  
-  //! END @TODO1
   app.get("/filteredimage?:image_url", async( req, res ) => {
-    console.log("In the filter endpoint");
-    let { image_url } = req.params;
-    if (!image_url ){
-      return res.status(400).send('Please provide an Image URL');
+    const { image_url } = req.query;
+
+    if (validUrl.isUri(image_url)) {
+      filterImageFromURL(image_url).then(response => {
+        res.sendFile(response);
+        res.on('finish', ()=>{
+          deleteLocalFiles([response]);
+        });
+      })
+
     }
-    console.log("query");
-    console.log(req.query);
-    console.log("query params");
-    console.log(req.params);
-    var url = req.query.image_url;   
-    filterImageFromURL(url)
-    res.sendFile(url);
-  } );
+    else
+      res.status(400).send("URL for Image is invalid.")
+  });
 
   // Root Endpoint
   // Displays a simple message to the user
